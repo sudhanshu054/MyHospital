@@ -3,55 +3,62 @@
 # Set the secret env vars (OPENAI_API_KEY, JWT_SECRET, MYSQL_*, etc.) in the Render dashboard.
 
 services:
-  - type: web
+  - type: pserv
     name: hospital-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     plan: starter
     healthCheckPath: /api/openapi
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: docker
-      - key: MYSQL_HOST
+      - key: PORT
+        value: 10000
+      - key: DATABASE_TYPE
+        value: postgresql
+      - key: DATABASE_HOST
         fromDatabase:
           name: hospital-db
           property: host
-      - key: MYSQL_USER
-        value: root
-      - key: MYSQL_PASSWORD
-        sync: false
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: hospital-db
+          property: port
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: hospital-db
+          property: database
+      - key: DATABASE_USER
+        fromDatabase:
+          name: hospital-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: hospital-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
       - key: REDIS_HOST
         fromService:
-          type: redis
+          type: keyvalue
           name: hospital-redis
           property: host
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_API_MODEL
         value: gpt-4o-mini
-      - key: CORS_ALLOWED_ORIGINS
-        fromService:
-          type: web
-          name: hospital-frontend
-          property: url
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
 
-  - type: redis
+  - type: keyvalue
     name: hospital-redis
     plan: starter
     ipAllowList: []
 
   - type: web
     name: hospital-frontend
-    runtime: static
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    envVars:
-      - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: hospital-backend
-          property: url
-        prefix: /api
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
 
 databases:
   - name: hospital-db

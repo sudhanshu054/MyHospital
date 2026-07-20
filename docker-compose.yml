@@ -23,19 +23,21 @@ services:
     ports:
       - '6379:6379'
 
-  backend:
+  hospital-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - '8080:8080'
+      - '8080:10000'
     environment:
+      PORT: 10000
       SPRING_PROFILES_ACTIVE: docker
       MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: root
       REDIS_HOST: redis
-      OPENAI_API_KEY: ${OPENAI_API_KEY:}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file (at least 32 bytes)}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_MODEL: ${OPENAI_API_MODEL:-gpt-4o-mini}
     depends_on:
       mysql:
@@ -50,7 +52,7 @@ services:
     ports:
       - '3000:80'
     depends_on:
-      - backend
+      - hospital-backend
 
 volumes:
   mysql-data:

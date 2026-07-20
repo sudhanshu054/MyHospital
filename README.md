@@ -39,7 +39,7 @@ Enterprise-grade Hospital Management System scaffold with Java Spring Boot backe
    - `MYSQL_PASSWORD`
    - `REDIS_HOST`
    - `REDIS_PORT`
-   - `jwt.secret`
+   - `JWT_SECRET` (at least 32 bytes)
 3. Run backend:
    ```bash
    mvn spring-boot:run
@@ -123,9 +123,10 @@ Configure via environment variables:
 ### Render (cloud)
 
 A `render.yaml` Blueprint is included. In the Render dashboard choose **New -> Blueprint**
-and connect this repository. Set the secret env vars (`OPENAI_API_KEY`, `JWT_SECRET`,
-`MYSQL_PASSWORD`) in the dashboard. The frontend is deployed as a static site that reads
-`VITE_API_BASE_URL` from the backend service URL.
+and connect this repository. It provisions Render Postgres, Key Value, a private Spring
+backend, and a public Nginx frontend. The Blueprint generates `JWT_SECRET`; optionally set
+`OPENAI_API_KEY` during setup. The frontend proxies `/api` over Render's private network,
+so the browser never needs a backend URL or cross-origin configuration.
 
 ### CI/CD
 

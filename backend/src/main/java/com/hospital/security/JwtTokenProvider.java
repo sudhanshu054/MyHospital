@@ -30,10 +30,9 @@ public class JwtTokenProvider {
     @PostConstruct
     public void init() {
         if (jwtSecret == null || jwtSecret.getBytes(StandardCharsets.UTF_8).length < 32) {
-            secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-        } else {
-            secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            throw new IllegalStateException("JWT_SECRET must be at least 32 bytes long");
         }
+        secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String createAccessToken(String email) {
