@@ -1,0 +1,30 @@
+# Java
+/backend/target/
+/backend/.mvn/
+/backend/.settings/
+/backend/.idea/
+/**/*.iml
+
+# Node
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+/frontend/.idea/
+
+# Environment
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
