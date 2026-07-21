@@ -9,7 +9,6 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: starter
-    healthCheckPath: /api/openapi
     envVars:
       - key: PORT
         value: 10000
