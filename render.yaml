@@ -3,12 +3,13 @@
 # Set the secret env vars (OPENAI_API_KEY, JWT_SECRET, MYSQL_*, etc.) in the Render dashboard.
 
 services:
-  - type: pserv
+  - type: web
     name: hospital-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: starter
+    plan: free
+    healthCheckPath: /api/openapi
     envVars:
       - key: PORT
         value: 10000
@@ -50,7 +51,7 @@ services:
 
   - type: keyvalue
     name: hospital-redis
-    plan: starter
+    plan: free
     ipAllowList: []
 
   - type: web
@@ -58,8 +59,9 @@ services:
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
+    plan: free
 
 databases:
   - name: hospital-db
     databaseName: hospital_management
-    plan: starter
+    plan: free
