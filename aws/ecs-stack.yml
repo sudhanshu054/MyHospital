@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Hospital Management System ECS Fargate deployment
+
+Parameters:
+  BackendImage:
+    Type: String
+  FrontendImage:
+    Type: String
+  DatabaseName:
+    Type: String
+    Default: hospital_management
+    AllowedPattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-02c9e1a081f35a68d
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: subnet-037f499b460243a70,subnet-0355f2edf1d413df7,subnet-0c74edfd4314e10ac
+
+Resources:
+  DatabaseSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Database credentials for the Hospital Management System
+      GenerateSecretString:
+        SecretStringTemplate: '{"username":"hospital_admin"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\\'
+
+  JwtSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: JWT signing secret for the Hospital Management System
+      GenerateSecretString:
+        PasswordLength: 48
+        ExcludePunctuation: true
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow PostgreSQL only from ECS tasks
+      VpcId: !Ref VpcId
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow public HTTP traffic to the application load balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  TaskSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow application traffic only from the load balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+
+  DatabaseIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DatabaseSecurityGroup
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref TaskSecurityGroup
+
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets for Hospital PostgreSQL database
+      SubnetIds: !Ref PublicSubnetIds
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      AllocatedStorage: '20'
+      DBInstanceClass: db.t3.micro
+      DBInstanceIdentifier: !Sub '${AWS::StackName}-postgres'
+      DBName: !Ref DatabaseName
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      Engine: postgres
+      MasterUsername: !Sub '{{resolve:secretsmanager:${DatabaseSecret}:SecretString:username}}'
+      MasterUserPassword: !Sub '{{resolve:secretsmanager:${DatabaseSecret}:SecretString:password}}'
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      VPCSecurityGroups:
+        - !Ref DatabaseSecurityGroup
+      BackupRetentionPeriod: 1
+      DeletionProtection: false
+
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${AWS::StackName}-cluster'
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ReadDatabaseSecret
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref DatabaseSecret
+                  - !Ref JwtSecret
+
+  BackendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/${AWS::StackName}/backend'
+      RetentionInDays: 7
+
+  FrontendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/${AWS::StackName}/frontend'
+      RetentionInDays: 7
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${AWS::StackName}-task'
+      Cpu: '1024'
+      Memory: '2048'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: backend
+          Image: !Ref BackendImage
+          Essential: true
+          PortMappings:
+            - ContainerPort: 10000
+          Environment:
+            - Name: PORT
+              Value: '10000'
+            - Name: DATABASE_TYPE
+              Value: postgresql
+            - Name: DATABASE_HOST
+              Value: !GetAtt Database.Endpoint.Address
+            - Name: DATABASE_PORT
+              Value: !GetAtt Database.Endpoint.Port
+            - Name: DATABASE_NAME
+              Value: !Ref DatabaseName
+            - Name: DATABASE_USER
+              Value: !Sub '{{resolve:secretsmanager:${DatabaseSecret}:SecretString:username}}'
+            - Name: REDIS_HOST
+              Value: 127.0.0.1
+            - Name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              Value: update
+            - Name: JAVA_TOOL_OPTIONS
+              Value: -XX:MaxRAMPercentage=60
+          Secrets:
+            - Name: DATABASE_PASSWORD
+              ValueFrom: !Sub '${DatabaseSecret}:password::'
+            - Name: JWT_SECRET
+              ValueFrom: !Ref JwtSecret
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref BackendLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+              mode: blocking
+        - Name: frontend
+          Image: !Ref FrontendImage
+          Essential: true
+          DependsOn:
+            - ContainerName: backend
+              Condition: START
+          PortMappings:
+            - ContainerPort: 80
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref FrontendLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+              mode: blocking
+        - Name: redis
+          Image: redis:7-alpine
+          Essential: false
+          PortMappings:
+            - ContainerPort: 6379
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+      Subnets: !Ref PublicSubnetIds
+      Type: application
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /api/openapi
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VpcId
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '30'
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: Listener
+    Properties:
+      Cluster: !Ref Cluster
+      DeploymentConfiguration:
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount: 1
+      EnableExecuteCommand: false
+      HealthCheckGracePeriodSeconds: 120
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref TaskSecurityGroup
+          Subnets: !Ref PublicSubnetIds
+      TaskDefinition: !Ref TaskDefinition
+      LoadBalancers:
+        - ContainerName: frontend
+          ContainerPort: 80
+          TargetGroupArn: !Ref TargetGroup
+
+Outputs:
+  ApplicationUrl:
+    Description: Public URL for the Hospital Management System
+    Value: !Sub 'http://${LoadBalancer.DNSName}'
+  DatabaseSecretArn:
+    Description: Secret containing the generated database credentials
+    Value: !Ref DatabaseSecret
