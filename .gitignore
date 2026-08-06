@@ -3,6 +3,9 @@
 /backend/.mvn/
 /backend/.settings/
 /backend/.idea/
+/backend/node_modules/
+/backend/.wrangler/
+/backend/worker-configuration.d.ts
 /**/*.iml
 
 # Node
@@ -10,11 +13,17 @@
 /frontend/dist/
 /frontend/.vite/
 /frontend/.idea/
+/frontend/.wrangler/
 
 # Environment
 **/.env
 **/.env.local
 **/.env.*.local
+**/.dev.vars
+**/.dev.vars.*
+!**/.dev.vars.example
+**/.deploy.vars
+**/.deploy.vars.*
 
 # Logs
 *.log

@@ -1,0 +1,17 @@
+# Copy to .dev.vars only for `npm run cf:dev`; do not commit real values.
+DATABASE_TYPE=postgresql
+DATABASE_HOST=your-supabase-session-pooler-host
+DATABASE_PORT=5432
+DATABASE_NAME=postgres
+DATABASE_USER=your-supabase-pooler-user
+DATABASE_PASSWORD=your-supabase-password
+DATABASE_URL_PARAMETERS=?sslmode=require
+JWT_SECRET=replace-with-a-random-32-byte-minimum-secret
+REDIS_HOST=your-upstash-endpoint
+REDIS_PORT=6379
+REDIS_USERNAME=default
+REDIS_PASSWORD=your-upstash-password
+REDIS_SSL_ENABLED=true
+OPENAI_API_KEY=
+OPENAI_API_MODEL=gpt-4o-mini
+SPRING_JPA_HIBERNATE_DDL_AUTO=update

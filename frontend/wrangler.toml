@@ -1,0 +1,6 @@
+name = "hospital-management"
+compatibility_date = "2026-08-05"
+
+# Cloudflare Pages deploys `dist` and discovers `functions/` automatically.
+# This file exists for local Pages Functions development and type generation.
+pages_build_output_dir = "./dist"

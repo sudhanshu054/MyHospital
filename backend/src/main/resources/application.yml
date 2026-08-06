@@ -5,7 +5,7 @@ spring:
   datasource:
     # Defaults keep local Docker Compose on MySQL. Set DATABASE_TYPE=postgresql
     # and the DATABASE_* variables when using Render Postgres.
-    url: jdbc:${DATABASE_TYPE:mysql}://${DATABASE_HOST:${MYSQL_HOST:localhost}}:${DATABASE_PORT:3306}/${DATABASE_NAME:hospital_management}
+    url: jdbc:${DATABASE_TYPE:mysql}://${DATABASE_HOST:${MYSQL_HOST:localhost}}:${DATABASE_PORT:3306}/${DATABASE_NAME:hospital_management}${DATABASE_URL_PARAMETERS:}
     username: ${DATABASE_USER:${MYSQL_USER:root}}
     password: ${DATABASE_PASSWORD:${MYSQL_PASSWORD:root}}
   jpa:
@@ -15,9 +15,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
-  redis:
-    host: ${REDIS_HOST:redis}
-    port: ${REDIS_PORT:6379}
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      username: ${REDIS_USERNAME:}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
 
 jwt:
   secret: ${JWT_SECRET:}

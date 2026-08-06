@@ -1,0 +1,21 @@
+name = "hospital-backend"
+main = "worker/src/index.ts"
+compatibility_date = "2026-08-05"
+workers_dev = true
+
+[[containers]]
+class_name = "HospitalBackend"
+image = "./Dockerfile"
+instance_type = "basic"
+max_instances = 1
+
+  [containers.constraints]
+  regions = ["APAC"]
+
+[[durable_objects.bindings]]
+name = "HOSPITAL_BACKEND"
+class_name = "HospitalBackend"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["HospitalBackend"]

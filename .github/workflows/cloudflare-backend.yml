@@ -1,0 +1,43 @@
+name: Deploy Cloudflare Backend Container
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - backend/**
+      - .github/workflows/cloudflare-backend.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_BACKEND_SECRETS: ${{ secrets.CLOUDFLARE_BACKEND_SECRETS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install Worker dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Test Spring Boot application
+        run: mvn -B -f backend/pom.xml test
+      - name: Deploy Worker and Spring container
+        working-directory: backend
+        run: |
+          test -n "$CLOUDFLARE_BACKEND_SECRETS" || (echo "Set CLOUDFLARE_BACKEND_SECRETS before deploying." && exit 1)
+          printf '%s' "$CLOUDFLARE_BACKEND_SECRETS" > .deploy.vars
+          npx wrangler deploy --secrets-file .deploy.vars
+          rm .deploy.vars

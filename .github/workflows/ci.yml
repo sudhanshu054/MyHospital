@@ -43,6 +43,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
       - name: Install dependencies
-        run: cd frontend && npm install
-      - name: Build frontend
-        run: cd frontend && npm run build
+        run: cd frontend && npm ci
+      - name: Build and validate frontend
+        run: cd frontend && npm run build && npm run check:worker
