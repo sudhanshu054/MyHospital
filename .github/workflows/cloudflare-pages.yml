@@ -21,6 +21,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      CLOUDFLARE_API_ORIGIN: ${{ vars.CLOUDFLARE_API_ORIGIN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v5
@@ -28,12 +29,27 @@ jobs:
           node-version: '20'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Validate Cloudflare configuration
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || (echo "::error::Set CLOUDFLARE_API_TOKEN repository secret." && exit 1)
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || (echo "::error::Set CLOUDFLARE_ACCOUNT_ID repository secret." && exit 1)
+          test -n "$CLOUDFLARE_PAGES_PROJECT" || (echo "::error::Set CLOUDFLARE_PAGES_PROJECT repository variable (for example hospital-management)." && exit 1)
+          test -n "$CLOUDFLARE_API_ORIGIN" || (echo "::error::Set CLOUDFLARE_API_ORIGIN repository variable to your backend Worker URL (for example https://hospital-backend.<account>.workers.dev)." && exit 1)
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
       - name: Build and validate
         working-directory: frontend
         run: npm run build && npm run check:worker
+      - name: Configure Pages API origin
+        run: |
+          node scripts/set-pages-api-origin.mjs
       - name: Deploy Pages
         working-directory: frontend
-        run: npx wrangler pages deploy dist --project-name "$CLOUDFLARE_PAGES_PROJECT" --branch "$GITHUB_REF_NAME"
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          npx wrangler pages deploy dist \
+            --project-name "$CLOUDFLARE_PAGES_PROJECT" \
+            --branch "$BRANCH" \
+            --commit-hash "$GITHUB_SHA" \
+            --commit-message "$GITHUB_EVENT_NAME"

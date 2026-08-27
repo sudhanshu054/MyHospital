@@ -1,6 +1,7 @@
 name = "hospital-management"
 compatibility_date = "2026-08-05"
-
-# Cloudflare Pages deploys `dist` and discovers `functions/` automatically.
-# This file exists for local Pages Functions development and type generation.
 pages_build_output_dir = "./dist"
+
+# API_ORIGIN is injected during CI from the CLOUDFLARE_API_ORIGIN repository
+# variable, or set manually in the Cloudflare Pages dashboard for direct deploys.
+# Local dev: copy .dev.vars.example to .dev.vars instead.

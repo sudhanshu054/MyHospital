@@ -3,6 +3,16 @@ main = "worker/src/index.ts"
 compatibility_date = "2026-08-05"
 workers_dev = true
 
+[vars]
+PORT = "10000"
+DATABASE_TYPE = "postgresql"
+DATABASE_PORT = "5432"
+DATABASE_URL_PARAMETERS = "?sslmode=require"
+REDIS_PORT = "6379"
+REDIS_SSL_ENABLED = "true"
+OPENAI_API_MODEL = "gpt-4o-mini"
+SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
+
 [[containers]]
 class_name = "HospitalBackend"
 image = "./Dockerfile"
