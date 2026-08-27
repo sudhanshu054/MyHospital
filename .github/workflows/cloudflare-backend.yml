@@ -46,6 +46,9 @@ jobs:
         run: npm ci
       - name: Test Spring Boot application
         run: mvn -B -f backend/pom.xml test
+      - name: Verify Cloudflare token scopes
+        working-directory: backend
+        run: npx wrangler whoami
       - name: Deploy Worker and Spring container
         working-directory: backend
         run: |
