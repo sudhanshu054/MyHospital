@@ -120,23 +120,16 @@ Configure via environment variables:
    The frontend is served on `http://localhost:3000` and proxies `/api` to the backend
    on port `8080`. Set `OPENAI_API_KEY` in `.env` to enable live AI responses.
 
-### Render backend + Cloudflare Pages frontend
+### Koyeb backend + Cloudflare Pages frontend
 
-`render.yaml` deploys only the existing Spring Boot Docker backend to Render. It uses the
-existing Supabase PostgreSQL and Upstash Redis services; the React frontend remains on
-Cloudflare Pages and proxies same-origin `/api/*` requests to the Render URL.
+Koyeb builds `backend/Dockerfile` directly from GitHub and supplies a public HTTPS API
+URL. Cloudflare Pages remains the frontend and keeps browser API requests same-origin.
+Follow [the Koyeb deployment guide](docs/koyeb-deployment.md), then add the Koyeb URL as
+the GitHub repository variable `KOYEB_API_ORIGIN` and run **Deploy Cloudflare Pages**.
 
-1. In Render, select **New -> Blueprint** and connect this GitHub repository.
-2. Provide the requested Supabase host, user, password and Upstash host/password values.
-   Render generates `JWT_SECRET`; optionally provide `OPENAI_API_KEY`.
-3. Choose the **Free** plan for the backend and create the Blueprint. Render builds
-   `backend/Dockerfile` directly from GitHub and provides an HTTPS `onrender.com` URL.
-4. Add that URL, without a trailing slash, as the GitHub repository variable
-   `RENDER_API_ORIGIN`. Keep `CLOUDFLARE_PAGES_PROJECT=hospital-management`.
-5. Run **Deploy Cloudflare Pages**.
-
-The Render free service sleeps after 15 minutes without traffic, so the first request can
-be slow. It is suitable for demos and development, not real patient data or production.
+Koyeb free instances are for demos and development. The Spring application may have a
+cold start after Koyeb scales it down, and it must fit within the 512 MB free-instance
+memory limit.
 
 ### Retired: Google Cloud Run setup
 
