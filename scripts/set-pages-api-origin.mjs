@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const wranglerPath = resolve(root, 'frontend', 'wrangler.toml');
-const origin = (process.env.API_ORIGIN || process.env.CLOUDFLARE_API_ORIGIN || '').replace(/\/$/, '');
+const origin = (process.env.API_ORIGIN || process.env.CLOUD_RUN_API_ORIGIN || process.env.CLOUDFLARE_API_ORIGIN || '').replace(/\/$/, '');
 
 if (!origin) {
-  console.error('Set API_ORIGIN or CLOUDFLARE_API_ORIGIN before deploying Pages.');
+  console.error('Set API_ORIGIN or CLOUD_RUN_API_ORIGIN before deploying Pages.');
   process.exit(1);
 }
 
