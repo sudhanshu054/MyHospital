@@ -120,15 +120,27 @@ Configure via environment variables:
    The frontend is served on `http://localhost:3000` and proxies `/api` to the backend
    on port `8080`. Set `OPENAI_API_KEY` in `.env` to enable live AI responses.
 
-### Render (cloud)
+### Render backend + Cloudflare Pages frontend
 
-A `render.yaml` Blueprint is included. In the Render dashboard choose **New -> Blueprint**
-and connect this repository. It provisions Render Postgres, Key Value, a private Spring
-backend, and a public Nginx frontend. The Blueprint generates `JWT_SECRET`; optionally set
-`OPENAI_API_KEY` during setup. The frontend proxies `/api` over Render's private network,
-so the browser never needs a backend URL or cross-origin configuration.
+`render.yaml` deploys only the existing Spring Boot Docker backend to Render. It uses the
+existing Supabase PostgreSQL and Upstash Redis services; the React frontend remains on
+Cloudflare Pages and proxies same-origin `/api/*` requests to the Render URL.
 
-### Cloudflare Pages + Google Cloud Run
+1. In Render, select **New -> Blueprint** and connect this GitHub repository.
+2. Provide the requested Supabase host, user, password and Upstash host/password values.
+   Render generates `JWT_SECRET`; optionally provide `OPENAI_API_KEY`.
+3. Choose the **Free** plan for the backend and create the Blueprint. Render builds
+   `backend/Dockerfile` directly from GitHub and provides an HTTPS `onrender.com` URL.
+4. Add that URL, without a trailing slash, as the GitHub repository variable
+   `RENDER_API_ORIGIN`. Keep `CLOUDFLARE_PAGES_PROJECT=hospital-management`.
+5. Run **Deploy Cloudflare Pages**.
+
+The Render free service sleeps after 15 minutes without traffic, so the first request can
+be slow. It is suitable for demos and development, not real patient data or production.
+
+### Retired: Google Cloud Run setup
+
+Do not follow this section. The backend deployment path is now Render, described above.
 
 The React application stays on **Cloudflare Pages**. Its `/api/*` requests are handled
 by the Pages Function in `frontend/functions/api/[[path]].ts`, which forwards them to a

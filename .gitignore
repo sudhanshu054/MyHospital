@@ -24,9 +24,6 @@
 !**/.dev.vars.example
 **/.deploy.vars
 **/.deploy.vars.*
-**/.cloud-run-env.yaml
-**/.cloud-run-env.*.yaml
-!**/cloud-run-env.yaml.example
 
 # Logs
 *.log
