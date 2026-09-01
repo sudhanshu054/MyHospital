@@ -1,13 +1,9 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.1
     environment:
       MYSQL_DATABASE: hospital_management
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
     ports:
       - '3306:3306'
     volumes:
@@ -49,7 +45,7 @@ services:
     image: cloudflare/cloudflared:latest
     profiles: ["tunnel"]
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?Set CLOUDFLARE_TUNNEL_TOKEN in the root .env file}
     depends_on:
       hospital-backend:
         condition: service_started
