@@ -120,20 +120,20 @@ Configure via environment variables:
    The frontend is served on `http://localhost:3000` and proxies `/api` to the backend
    on port `8080`. Set `OPENAI_API_KEY` in `.env` to enable live AI responses.
 
-### Koyeb backend + Cloudflare Pages frontend
+### Local Docker backend + Cloudflare Tunnel
 
-Koyeb builds `backend/Dockerfile` directly from GitHub and supplies a public HTTPS API
-URL. Cloudflare Pages remains the frontend and keeps browser API requests same-origin.
-Follow [the Koyeb deployment guide](docs/koyeb-deployment.md), then add the Koyeb URL as
-the GitHub repository variable `KOYEB_API_ORIGIN` and run **Deploy Cloudflare Pages**.
+The Spring Boot backend runs on this computer with Docker Compose. Cloudflare Tunnel
+securely exposes it to the Cloudflare Pages API proxy, without opening router ports or
+using a paid Workers plan. Follow [the Tunnel deployment guide](docs/cloudflare-tunnel-deployment.md),
+then set GitHub repository variable `TUNNEL_API_ORIGIN` and run **Deploy Cloudflare Pages**.
 
-Koyeb free instances are for demos and development. The Spring application may have a
-cold start after Koyeb scales it down, and it must fit within the 512 MB free-instance
-memory limit.
+This arrangement is for demonstrations and development: the backend is unavailable
+whenever this computer, Docker Engine, or the tunnel is stopped.
 
-### Retired: Google Cloud Run setup
+### Retired deployment configurations
 
-Do not follow this section. The backend deployment path is now Render, described above.
+Do not follow the historical Cloud Run and Cloudflare Containers material below. The
+current backend deployment path is the local Docker + Cloudflare Tunnel setup above.
 
 The React application stays on **Cloudflare Pages**. Its `/api/*` requests are handled
 by the Pages Function in `frontend/functions/api/[[path]].ts`, which forwards them to a
