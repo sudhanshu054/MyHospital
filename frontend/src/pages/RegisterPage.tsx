@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import {
   Button,
   Container,
@@ -58,7 +59,14 @@ const RegisterPage = () => {
       auth?.signIn(response.data);
       navigate('/');
     } catch (err) {
-      setError('Unable to register. Please review the form inputs.');
+      if (axios.isAxiosError(err)) {
+        const apiMessage = err.response?.data?.message;
+        if (typeof apiMessage === 'string' && apiMessage.trim()) {
+          setError(apiMessage);
+          return;
+        }
+      }
+      setError('Unable to reach the hospital API. Please try again in a moment.');
     }
   };
 
@@ -75,14 +83,14 @@ const RegisterPage = () => {
         </Stack>
         <Box sx={{ p: { xs: 3, md: 4 }, borderRadius: 4, backgroundColor: '#ffffff' }}>
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit} noValidate>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField label="First Name" name="firstName" value={form.firstName} onChange={handleChange} fullWidth required />
               <TextField label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} fullWidth required />
             </Stack>
             <TextField label="Email" name="email" type="email" value={form.email} onChange={handleChange} fullWidth required margin="normal" />
             <TextField label="Password" name="password" type="password" value={form.password} onChange={handleChange} fullWidth required margin="normal"
-              helperText="At least 8 characters" />
+              inputProps={{ minLength: 8 }} helperText="At least 8 characters" />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField select label="Role" name="role" value={form.role} onChange={handleChange} fullWidth margin="normal">
                 {roles.map((option) => (
