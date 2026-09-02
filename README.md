@@ -127,6 +127,9 @@ securely exposes it to the Cloudflare Pages API proxy, without opening router po
 using a paid Workers plan. Follow [the Tunnel deployment guide](docs/cloudflare-tunnel-deployment.md),
 then set GitHub repository variable `TUNNEL_API_ORIGIN` and run **Deploy Cloudflare Pages**.
 
+To enable the Google option on Login and Create Account, follow the
+[Google Sign-In setup guide](docs/google-oauth-setup.md).
+
 This arrangement is for demonstrations and development: the backend is unavailable
 whenever this computer, Docker Engine, or the tunnel is stopped.
 

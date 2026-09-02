@@ -35,6 +35,10 @@ openai:
     model: ${OPENAI_API_MODEL:gpt-4o-mini}
   timeout-ms: 20000
 
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
+
 springdoc:
   api-docs:
     path: /api/openapi

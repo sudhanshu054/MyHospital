@@ -27,4 +27,5 @@ export interface AuthResponse {
 
 export const login = (payload: LoginPayload) => api.post<AuthResponse>('/auth/login', payload);
 export const register = (payload: RegisterPayload) => api.post<AuthResponse>('/auth/register', payload);
+export const loginWithGoogle = (credential: string) => api.post<AuthResponse>('/auth/google', { credential });
 export const refreshToken = (refreshToken: string) => api.post<AuthResponse>('/auth/refresh', { refreshToken });

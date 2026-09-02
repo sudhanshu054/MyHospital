@@ -1,9 +1,10 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Button, Container, TextField, Typography, Box, Alert, Avatar, Stack } from '@mui/material';
+import { Button, Container, TextField, Typography, Box, Alert, Avatar, Stack, Divider } from '@mui/material';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import { login } from '../services/auth';
 import { useAuth } from '../hooks/useAuth';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -62,6 +63,8 @@ const LoginPage = () => {
               Sign In
             </Button>
           </Box>
+          <Divider sx={{ my: 2 }}>OR</Divider>
+          <GoogleSignInButton onError={setError} />
           <Typography variant="body2" align="center" sx={{ mt: 2 }}>
             Don&apos;t have an account? <Link to="/register">Register now</Link>
           </Typography>

@@ -2,6 +2,7 @@ package com.hospital.controller;
 
 import com.hospital.dto.AuthResponse;
 import com.hospital.dto.LoginRequest;
+import com.hospital.dto.GoogleLoginRequest;
 import com.hospital.dto.RegisterRequest;
 import com.hospital.dto.TokenRefreshRequest;
 import com.hospital.service.AuthService;
@@ -21,6 +22,11 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
+        return ResponseEntity.ok(authService.loginWithGoogle(request.getCredential()));
     }
 
     @PostMapping("/login")

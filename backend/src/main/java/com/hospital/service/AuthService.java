@@ -7,6 +7,7 @@ import com.hospital.dto.TokenRefreshRequest;
 
 public interface AuthService {
     AuthResponse register(RegisterRequest request);
+    AuthResponse loginWithGoogle(String credential);
     AuthResponse login(LoginRequest request);
     AuthResponse refreshToken(TokenRefreshRequest request);
 }

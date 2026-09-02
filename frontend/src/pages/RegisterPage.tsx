@@ -16,6 +16,7 @@ import {
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import { register } from '../services/auth';
 import { useAuth } from '../hooks/useAuth';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const roles = [
   { value: 'PATIENT', label: 'Patient' },
@@ -114,6 +115,8 @@ const RegisterPage = () => {
               Create Account
             </Button>
           </Box>
+          <Divider sx={{ my: 2 }} />
+          <GoogleSignInButton onError={setError} />
           <Divider sx={{ my: 2 }} />
           <Typography variant="body2" align="center">
             Already have an account? <Link to="/login">Login</Link>

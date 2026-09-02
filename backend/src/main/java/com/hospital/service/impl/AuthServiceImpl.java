@@ -13,7 +13,12 @@ import com.hospital.repository.RefreshTokenRepository;
 import com.hospital.repository.UserRepository;
 import com.hospital.security.JwtTokenProvider;
 import com.hospital.service.AuthService;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,6 +39,9 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
+
+    @Value("${google.oauth.client-id:}")
+    private String googleClientId;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PatientRepository patientRepository,
@@ -80,6 +89,52 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
+    public AuthResponse loginWithGoogle(String credential) {
+        if (googleClientId == null || googleClientId.isBlank()) {
+            throw new IllegalStateException("Google sign-in is not configured");
+        }
+
+        GoogleIdToken idToken;
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+            idToken = verifier.verify(credential);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Unable to verify the Google sign-in token");
+        }
+
+        if (idToken == null || !Boolean.TRUE.equals(idToken.getPayload().getEmailVerified())) {
+            throw new IllegalStateException("Google could not verify this email address");
+        }
+
+        GoogleIdToken.Payload payload = idToken.getPayload();
+        String email = payload.getEmail();
+        if (email == null || email.isBlank()) {
+            throw new IllegalStateException("Google did not provide an email address");
+        }
+
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User newUser = User.builder()
+                    .firstName(valueOrDefault(payload.get("given_name"), "Google"))
+                    .lastName(valueOrDefault(payload.get("family_name"), "User"))
+                    .email(email)
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .role(Role.PATIENT)
+                    .enabled(true)
+                    .createdAt(Instant.now())
+                    .build();
+            userRepository.save(newUser);
+            initializeProfileForRole(newUser, new RegisterRequest());
+            return newUser;
+        });
+
+        return authResponse(user, "Google sign-in successful");
+    }
+
+    @Override
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -89,16 +144,7 @@ public class AuthServiceImpl implements AuthService {
         if (!user.isEnabled()) {
             throw new IllegalStateException("User account is not activated");
         }
-        String accessToken = tokenProvider.createAccessToken(user.getEmail());
-        String refreshToken = createRefreshToken(user);
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .message("Login successful")
-                .build();
+        return authResponse(user, "Login successful");
     }
 
     @Override
@@ -128,6 +174,21 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         refreshTokenRepository.save(refreshToken);
         return token;
+    }
+
+    private AuthResponse authResponse(User user, String message) {
+        return AuthResponse.builder()
+                .accessToken(tokenProvider.createAccessToken(user.getEmail()))
+                .refreshToken(createRefreshToken(user))
+                .tokenType("Bearer")
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .message(message)
+                .build();
+    }
+
+    private String valueOrDefault(Object value, String defaultValue) {
+        return value instanceof String string && !string.isBlank() ? string : defaultValue;
     }
 
     private void initializeProfileForRole(User user, RegisterRequest request) {
