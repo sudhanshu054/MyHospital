@@ -116,7 +116,7 @@ const RegisterPage = () => {
             </Button>
           </Box>
           <Divider sx={{ my: 2 }} />
-          <GoogleSignInButton onError={setError} />
+          <GoogleSignInButton onError={setError} label="Sign up with Google" />
           <Divider sx={{ my: 2 }} />
           <Typography variant="body2" align="center">
             Already have an account? <Link to="/login">Login</Link>

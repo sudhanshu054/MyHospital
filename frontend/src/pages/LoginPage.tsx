@@ -64,7 +64,7 @@ const LoginPage = () => {
             </Button>
           </Box>
           <Divider sx={{ my: 2 }}>OR</Divider>
-          <GoogleSignInButton onError={setError} />
+          <GoogleSignInButton onError={setError} label="Sign in with Google" />
           <Typography variant="body2" align="center" sx={{ mt: 2 }}>
             Don&apos;t have an account? <Link to="/register">Register now</Link>
           </Typography>

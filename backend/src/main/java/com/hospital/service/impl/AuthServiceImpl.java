@@ -24,9 +24,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -90,11 +92,34 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResponse loginWithGoogle(String credential) {
+    public AuthResponse loginWithGoogle(String credential, String accessToken) {
         if (googleClientId == null || googleClientId.isBlank()) {
             throw new IllegalStateException("Google sign-in is not configured");
         }
 
+        GoogleAccount googleAccount = credential != null && !credential.isBlank()
+                ? verifyGoogleCredential(credential)
+                : verifyGoogleAccessToken(accessToken);
+
+        User user = userRepository.findByEmail(googleAccount.email()).orElseGet(() -> {
+            User newUser = User.builder()
+                    .firstName(googleAccount.firstName())
+                    .lastName(googleAccount.lastName())
+                    .email(googleAccount.email())
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .role(Role.PATIENT)
+                    .enabled(true)
+                    .createdAt(Instant.now())
+                    .build();
+            userRepository.save(newUser);
+            initializeProfileForRole(newUser, new RegisterRequest());
+            return newUser;
+        });
+
+        return authResponse(user, "Google sign-in successful");
+    }
+
+    private GoogleAccount verifyGoogleCredential(String credential) {
         GoogleIdToken idToken;
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
@@ -115,23 +140,34 @@ public class AuthServiceImpl implements AuthService {
         if (email == null || email.isBlank()) {
             throw new IllegalStateException("Google did not provide an email address");
         }
+        return new GoogleAccount(
+                email,
+                valueOrDefault(payload.get("given_name"), "Google"),
+                valueOrDefault(payload.get("family_name"), "User")
+        );
+    }
 
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
-            User newUser = User.builder()
-                    .firstName(valueOrDefault(payload.get("given_name"), "Google"))
-                    .lastName(valueOrDefault(payload.get("family_name"), "User"))
-                    .email(email)
-                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                    .role(Role.PATIENT)
-                    .enabled(true)
-                    .createdAt(Instant.now())
-                    .build();
-            userRepository.save(newUser);
-            initializeProfileForRole(newUser, new RegisterRequest());
-            return newUser;
-        });
+    private GoogleAccount verifyGoogleAccessToken(String accessToken) {
+        try {
+            Map<?, ?> tokenInfo = RestClient.create()
+                    .get()
+                    .uri("https://oauth2.googleapis.com/tokeninfo?access_token={accessToken}", accessToken)
+                    .retrieve()
+                    .body(Map.class);
 
-        return authResponse(user, "Google sign-in successful");
+            String audience = valueOrDefault(tokenInfo != null ? tokenInfo.get("aud") : null, "");
+            String email = valueOrDefault(tokenInfo != null ? tokenInfo.get("email") : null, "");
+            boolean emailVerified = Boolean.parseBoolean(valueOrDefault(tokenInfo != null ? tokenInfo.get("email_verified") : null, "false"));
+            if (!googleClientId.equals(audience) || !emailVerified || email.isBlank()) {
+                throw new IllegalStateException("Google could not verify this email address");
+            }
+
+            return new GoogleAccount(email, "Google", "User");
+        } catch (IllegalStateException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new IllegalStateException("Unable to verify the Google sign-in token");
+        }
     }
 
     @Override
@@ -215,5 +251,8 @@ public class AuthServiceImpl implements AuthService {
                             .availability("AVAILABLE")
                             .build());
         }
+    }
+
+    private record GoogleAccount(String email, String firstName, String lastName) {
     }
 }

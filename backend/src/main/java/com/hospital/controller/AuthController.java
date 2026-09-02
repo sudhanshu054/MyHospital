@@ -26,7 +26,10 @@ public class AuthController {
 
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
-        return ResponseEntity.ok(authService.loginWithGoogle(request.getCredential()));
+        if (!request.hasGoogleToken()) {
+            throw new IllegalArgumentException("A Google sign-in token is required");
+        }
+        return ResponseEntity.ok(authService.loginWithGoogle(request.getCredential(), request.getAccessToken()));
     }
 
     @PostMapping("/login")
