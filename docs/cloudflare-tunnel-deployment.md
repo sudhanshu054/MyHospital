@@ -54,23 +54,29 @@ docker compose --profile tunnel down
 Use this only if you do not have a Cloudflare-managed domain. It generates a random,
 temporary `trycloudflare.com` URL each time it starts.
 
-1. Start the local stack:
+1. Start the backend and quick tunnel:
 
    ```powershell
-   docker compose up --build -d mysql redis hospital-backend
+   docker compose --profile quick-tunnel up --build -d
    ```
 
-2. In a second PowerShell window, run:
+2. Print the generated API URL:
 
    ```powershell
-   docker compose --profile tunnel run --rm --no-deps cloudflared tunnel --url http://hospital-backend:10000
+   docker compose logs cloudflared-quick
    ```
-
-   If Docker cannot start that command, instead install `cloudflared` on Windows and run
-   `cloudflared tunnel --url http://localhost:8080`.
 
 3. Copy the printed `https://...trycloudflare.com` URL into GitHub variable
    `TUNNEL_API_ORIGIN`, then rerun **Deploy Cloudflare Pages**.
+
+   Do not add `/api` to this variable: Pages adds the API path when it forwards requests.
+
+4. After any Docker, Windows, or `cloudflared-quick` restart, repeat steps 2-3 because
+   Cloudflare assigns a new URL. To stop the quick tunnel only, run:
+
+   ```powershell
+   docker compose --profile quick-tunnel stop cloudflared-quick
+   ```
 
 Quick tunnel URLs change after every restart, have no uptime guarantee, are limited to
 200 in-flight requests, and do not support Server-Sent Events. They are for testing only.

@@ -2,6 +2,6 @@ name = "hospital-management"
 compatibility_date = "2026-08-05"
 pages_build_output_dir = "./dist"
 
-# API_ORIGIN is injected during CI from the CLOUDFLARE_API_ORIGIN repository
+# API_ORIGIN is injected during CI from the TUNNEL_API_ORIGIN repository
 # variable, or set manually in the Cloudflare Pages dashboard for direct deploys.
 # Local dev: copy .dev.vars.example to .dev.vars instead.

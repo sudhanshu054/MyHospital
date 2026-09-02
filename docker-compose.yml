@@ -50,6 +50,14 @@ services:
       hospital-backend:
         condition: service_started
 
+  cloudflared-quick:
+    image: cloudflare/cloudflared:latest
+    profiles: ["quick-tunnel"]
+    command: tunnel --no-autoupdate --url http://hospital-backend:10000
+    depends_on:
+      hospital-backend:
+        condition: service_started
+
   frontend:
     build:
       context: ./frontend
