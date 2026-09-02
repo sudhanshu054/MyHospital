@@ -6,6 +6,8 @@ import DashboardPage from './pages/DashboardPage';
 import AIConsultationPage from './pages/AIConsultationPage';
 import WardAvailabilityPage from './pages/WardAvailabilityPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import AppShell from './components/AppShell';
+import ProfilePage from './pages/ProfilePage';
 
 const App = () => {
   return (
@@ -13,30 +15,12 @@ const App = () => {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ai-consultation"
-          element={
-            <ProtectedRoute>
-              <AIConsultationPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ward-availability"
-          element={
-            <ProtectedRoute>
-              <WardAvailabilityPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/ai-consultation" element={<AIConsultationPage />} />
+          <Route path="/ward-availability" element={<WardAvailabilityPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
