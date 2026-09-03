@@ -26,6 +26,10 @@ CREATE TABLE doctors (
   license_number VARCHAR(100),
   phone VARCHAR(50),
   availability VARCHAR(200),
+  qualification VARCHAR(255),
+  experience_years INT,
+  biography TEXT,
+  profile_image_url VARCHAR(500),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_doctor_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_doctor_department FOREIGN KEY (department_id) REFERENCES departments(id)
@@ -83,6 +87,7 @@ CREATE TABLE appointments (
   status VARCHAR(50),
   type VARCHAR(50),
   notes TEXT,
+  diagnosis TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_appointment_patient FOREIGN KEY (patient_id) REFERENCES patients(id),
   CONSTRAINT fk_appointment_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id)
@@ -122,3 +127,86 @@ CREATE INDEX idx_appointments_doctor ON appointments(doctor_id);
 CREATE INDEX idx_appointments_patient ON appointments(patient_id);
 CREATE INDEX idx_beds_ward ON beds(ward_id);
 CREATE INDEX idx_ai_consultations_patient ON ai_consultations(patient_id);
+
+CREATE TABLE diagnostic_tests (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  category VARCHAR(255) NOT NULL,
+  description TEXT,
+  preparation_instructions TEXT,
+  estimated_processing_time VARCHAR(255),
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_diagnostic_test_category (category)
+);
+
+CREATE TABLE test_bookings (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  patient_id CHAR(36) NOT NULL,
+  diagnostic_test_id CHAR(36) NOT NULL,
+  booking_time DATETIME NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_test_booking_patient FOREIGN KEY (patient_id) REFERENCES patients(id),
+  CONSTRAINT fk_test_booking_test FOREIGN KEY (diagnostic_test_id) REFERENCES diagnostic_tests(id),
+  INDEX idx_test_booking_patient (patient_id),
+  INDEX idx_test_booking_test_time (diagnostic_test_id, booking_time)
+);
+
+CREATE TABLE test_results (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  patient_id CHAR(36) NOT NULL,
+  diagnostic_test_id CHAR(36) NOT NULL,
+  test_booking_id CHAR(36),
+  result_summary TEXT,
+  status VARCHAR(50),
+  report_url VARCHAR(1000),
+  resulted_at TIMESTAMP NULL,
+  CONSTRAINT fk_test_result_patient FOREIGN KEY (patient_id) REFERENCES patients(id),
+  CONSTRAINT fk_test_result_test FOREIGN KEY (diagnostic_test_id) REFERENCES diagnostic_tests(id),
+  CONSTRAINT fk_test_result_booking FOREIGN KEY (test_booking_id) REFERENCES test_bookings(id),
+  INDEX idx_test_result_patient (patient_id)
+);
+
+CREATE TABLE blood_inventory (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  blood_group VARCHAR(3) NOT NULL UNIQUE,
+  available_units INT NOT NULL,
+  version BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NULL
+);
+
+CREATE TABLE blood_requests (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  patient_id CHAR(36) NOT NULL,
+  blood_group VARCHAR(3) NOT NULL,
+  quantity INT NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_blood_request_patient FOREIGN KEY (patient_id) REFERENCES patients(id),
+  INDEX idx_blood_request_patient (patient_id)
+);
+
+CREATE TABLE bed_bookings (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  patient_id CHAR(36) NOT NULL,
+  bed_id CHAR(36) NOT NULL,
+  requested_from DATETIME NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_bed_booking_patient FOREIGN KEY (patient_id) REFERENCES patients(id),
+  CONSTRAINT fk_bed_booking_bed FOREIGN KEY (bed_id) REFERENCES beds(id),
+  INDEX idx_bed_booking_patient (patient_id),
+  INDEX idx_bed_booking_bed (bed_id)
+);
+
+CREATE TABLE contact_messages (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(50),
+  subject VARCHAR(180) NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

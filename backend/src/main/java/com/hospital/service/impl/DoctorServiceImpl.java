@@ -49,7 +49,11 @@ public class DoctorServiceImpl implements DoctorService {
                 .specialization(dto.getSpecialization())
                 .licenseNumber(dto.getLicenseNumber())
                 .phone(dto.getPhone())
-                .availability(dto.getAvailability());
+                .availability(dto.getAvailability())
+                .qualification(dto.getQualification())
+                .experienceYears(dto.getExperienceYears())
+                .biography(dto.getBiography())
+                .profileImageUrl(dto.getProfileImageUrl());
         if (dto.getDepartmentId() != null) {
             Department department = departmentRepository.findById(dto.getDepartmentId())
                     .orElseThrow(() -> new IllegalStateException("Department not found"));
@@ -71,6 +75,10 @@ public class DoctorServiceImpl implements DoctorService {
         doctor.setLicenseNumber(dto.getLicenseNumber());
         doctor.setPhone(dto.getPhone());
         doctor.setAvailability(dto.getAvailability());
+        doctor.setQualification(dto.getQualification());
+        doctor.setExperienceYears(dto.getExperienceYears());
+        doctor.setBiography(dto.getBiography());
+        doctor.setProfileImageUrl(dto.getProfileImageUrl());
         return toDto(doctorRepository.save(doctor));
     }
 
@@ -99,10 +107,15 @@ public class DoctorServiceImpl implements DoctorService {
                 .id(doctor.getId())
                 .user(userDto)
                 .departmentId(doctor.getDepartment() != null ? doctor.getDepartment().getId() : null)
+                .departmentName(doctor.getDepartment() != null ? doctor.getDepartment().getName() : null)
                 .specialization(doctor.getSpecialization())
                 .licenseNumber(doctor.getLicenseNumber())
                 .phone(doctor.getPhone())
                 .availability(doctor.getAvailability())
+                .qualification(doctor.getQualification())
+                .experienceYears(doctor.getExperienceYears())
+                .biography(doctor.getBiography())
+                .profileImageUrl(doctor.getProfileImageUrl())
                 .build();
     }
 }

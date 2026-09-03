@@ -1,9 +1,11 @@
-import { Avatar, Box, Card, CardContent, Container, Stack, Typography } from '@mui/material';
+import { Avatar, Box, Button, Card, CardContent, Container, Stack, Typography } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import { useAuth } from '../hooks/useAuth';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
   const auth = useAuth();
+  const navigate = useNavigate();
 
   return (
     <Container maxWidth="sm" sx={{ py: { xs: 4, md: 7 } }}>
@@ -22,6 +24,11 @@ const ProfilePage = () => {
             <Typography variant="overline" color="text.secondary">Email address</Typography>
             <Typography variant="body1" fontWeight={600}>{auth?.user?.email ?? 'Not available'}</Typography>
           </Box>
+          <Stack spacing={1.5} sx={{ mt: 3 }}>
+            <Button component={RouterLink} to="/medical-records" variant="outlined">Medical Records</Button>
+            <Button component={RouterLink} to="/test-results" variant="outlined">Test Results</Button>
+            <Button color="error" onClick={() => { auth?.signOut(); navigate('/login', { replace: true }); }}>Log Out</Button>
+          </Stack>
         </CardContent>
       </Card>
     </Container>

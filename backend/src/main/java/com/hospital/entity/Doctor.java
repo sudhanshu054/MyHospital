@@ -33,5 +33,10 @@ public class Doctor {
     private String licenseNumber;
     private String phone;
     private String availability;
+    private String qualification;
+    private Integer experienceYears;
+    @Column(length = 2000)
+    private String biography;
+    private String profileImageUrl;
     private Instant createdAt = Instant.now();
 }

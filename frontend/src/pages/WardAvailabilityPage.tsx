@@ -1,63 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Container, Grid, Card, CardContent, Typography, Chip, CircularProgress } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Card, CardContent, Chip, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, Typography } from '@mui/material';
 import { getWards, WardSummary } from '../services/wards';
+import { Bed, getBeds, reserveBed } from '../services/portal';
 
 const WardAvailabilityPage = () => {
-  const [wards, setWards] = useState<WardSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    getWards()
-      .then((response) => setWards(response.data))
-      .catch(() => setError('Unable to load ward availability.'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 6, textAlign: 'center' }}>
-        <CircularProgress />
-      </Container>
-    );
-  }
-
-    return (
-    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Ward Availability
-      </Typography>
-      {error && (
-        <Typography color="error" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      )}
-      <Grid container spacing={3}>
-        {wards.map((ward) => (
-          <Grid item xs={12} md={6} key={ward.id}>
-            <Card sx={{ height: '100%', borderRadius: 4 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6">{ward.wardName}</Typography>
-                <Typography variant="subtitle2" color="text.secondary">
-                  {ward.wardNumber} • Floor {ward.floorNumber}
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {ward.description}
-                </Typography>
-                <Chip label={ward.type} size="small" color="primary" variant="outlined" sx={{ mt: 2, mr: 1 }} />
-                <Typography variant="body2" sx={{ mt: 2 }}>
-                  Charge per day: ${ward.chargePerDay}
-                </Typography>
-                <Typography variant="body2">
-                  Total beds: {ward.totalBeds} • Occupied: {ward.occupiedBeds} • Reserved: {ward.reservedBeds}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Container>
-  );
+  const [wards, setWards] = useState<WardSummary[]>([]); const [beds, setBeds] = useState<Bed[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const [ward, setWard] = useState<WardSummary | null>(null); const [time, setTime] = useState(''); const [message, setMessage] = useState('');
+  useEffect(() => { Promise.all([getWards(), getBeds()]).then(([wardResponse, bedResponse]) => { setWards(wardResponse.data); setBeds(bedResponse.data); }).catch(() => setError('Unable to load ward availability.')).finally(() => setLoading(false)); }, []);
+  const wardBeds = useMemo(() => beds.filter((bed) => bed.wardId === ward?.id), [beds, ward]);
+  const book = async (bed: Bed) => { if (!time) return; try { await reserveBed(bed.id, time); setMessage(`Bed ${bed.bedNumber} was reserved successfully.`); setBeds((current) => current.map((item) => item.id === bed.id ? { ...item, status: 'RESERVED' } : item)); } catch (err: any) { setError(err?.response?.data?.message || 'Unable to reserve this bed.'); } };
+  if (loading) return <Container maxWidth="lg" sx={{ mt: 6, textAlign: 'center' }}><CircularProgress /><Typography sx={{ mt: 2 }}>Checking bed availability…</Typography></Container>;
+  return <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}><Typography variant="h4" component="h1" gutterBottom>Ward information</Typography><Typography color="text.secondary" sx={{ mb: 2 }}>Live ward summaries and individual bed status published by the hospital.</Typography>{error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}<Grid container spacing={3}>{wards.map((item) => <Grid item xs={12} md={6} key={item.id}><Card sx={{ height: '100%' }}><CardContent><Typography variant="h6">{item.wardName}</Typography><Typography variant="subtitle2" color="text.secondary">{item.wardNumber} · Floor {item.floorNumber}</Typography><Typography variant="body2" sx={{ mt: 1 }}>{item.description}</Typography><Chip label={item.type} size="small" color="primary" variant="outlined" sx={{ mt: 2 }} /><Typography variant="body2" sx={{ mt: 2 }}>Charge per day: {item.chargePerDay ?? 'Not provided'}</Typography><Typography variant="body2">Total: {item.totalBeds} · Occupied: {item.occupiedBeds} · Reserved: {item.reservedBeds}</Typography><Button sx={{ mt: 2 }} onClick={() => { setWard(item); setMessage(''); }}>Book bed</Button></CardContent></Card></Grid>)}</Grid><Dialog open={Boolean(ward)} onClose={() => setWard(null)} fullWidth maxWidth="sm"><DialogTitle>Book a bed — {ward?.wardName}</DialogTitle><DialogContent><TextField type="datetime-local" label="Required from" fullWidth InputLabelProps={{ shrink: true }} inputProps={{ min: new Date().toISOString().slice(0, 16) }} value={time} onChange={(e) => setTime(e.target.value)} sx={{ my: 2 }} />{message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}{wardBeds.length === 0 ? <Alert severity="info">No individual beds are published for this ward.</Alert> : <Grid container spacing={1}>{wardBeds.map((bed) => <Grid item xs={6} sm={4} key={bed.id}><Button fullWidth disabled={bed.status !== 'VACANT' || !time} variant={bed.status === 'VACANT' ? 'outlined' : 'text'} onClick={() => book(bed)}>{bed.bedNumber} · {bed.status}</Button></Grid>)}</Grid>}</DialogContent><DialogActions><Button onClick={() => setWard(null)}>Close</Button></DialogActions></Dialog></Container>;
 };
-
 export default WardAvailabilityPage;

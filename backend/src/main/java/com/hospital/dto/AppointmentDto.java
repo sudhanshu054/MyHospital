@@ -16,4 +16,5 @@ public class AppointmentDto {
     private String status;
     private String type;
     private String notes;
+    private String diagnosis;
 }

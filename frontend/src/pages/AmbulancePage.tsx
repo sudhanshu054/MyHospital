@@ -1,0 +1,6 @@
+import { Alert, Box, Button, Card, CardContent, Container, Stack, Typography } from '@mui/material';
+import LocalPhoneIcon from '@mui/icons-material/LocalPhone';
+
+const emergencyNumber = import.meta.env.VITE_HOSPITAL_EMERGENCY_PHONE || '+910000000000';
+const AmbulancePage = () => <Container maxWidth="md" sx={{ py: 5 }}><Card sx={{ borderTop: '6px solid', borderColor: 'error.main' }}><CardContent sx={{ p: { xs: 3, md: 5 } }}><Stack spacing={2} alignItems="flex-start"><LocalPhoneIcon color="error" sx={{ fontSize: 48 }} /><Typography variant="h4" component="h1">Call an ambulance</Typography><Typography color="text.secondary">For a medical emergency, use your local emergency services or the hospital’s configured emergency contact.</Typography><Alert severity="warning">If someone has severe chest pain, trouble breathing, signs of stroke, severe bleeding, or is unconscious, call local emergency services immediately.</Alert><Button component="a" href={`tel:${emergencyNumber}`} size="large" color="error" variant="contained" startIcon={<LocalPhoneIcon />}>Call now</Button><Typography variant="caption">Emergency number shown: {emergencyNumber}. Configure <code>VITE_HOSPITAL_EMERGENCY_PHONE</code> with the hospital’s verified number before public use.</Typography></Stack></CardContent></Card></Container>;
+export default AmbulancePage;

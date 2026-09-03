@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalDate;
+import com.hospital.dto.AppointmentRequest;
+import com.hospital.dto.AppointmentSlotDto;
+import com.hospital.security.UserPrincipal;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -19,10 +23,11 @@ public class AppointmentController {
         this.appointmentService = appointmentService;
     }
 
-    @PreAuthorize("hasAnyRole('PATIENT','ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasRole('PATIENT')")
     @PostMapping
-    public ResponseEntity<AppointmentDto> bookAppointment(@Valid @RequestBody AppointmentDto dto) {
-        return ResponseEntity.ok(appointmentService.create(dto));
+    public ResponseEntity<AppointmentDto> bookAppointment(@org.springframework.security.core.annotation.AuthenticationPrincipal UserPrincipal currentUser,
+                                                           @Valid @RequestBody AppointmentRequest request) {
+        return ResponseEntity.ok(appointmentService.createForPatient(currentUser.getUser(), request));
     }
 
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN','SUPER_ADMIN')")
@@ -37,9 +42,20 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.listByDoctor(doctorId));
     }
 
-    @PreAuthorize("hasAnyRole('PATIENT','ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<List<AppointmentDto>> listByPatient(@PathVariable UUID patientId) {
         return ResponseEntity.ok(appointmentService.listByPatient(patientId));
+    }
+
+    @PreAuthorize("hasRole('PATIENT')")
+    @GetMapping("/me")
+    public ResponseEntity<List<AppointmentDto>> listMine(@org.springframework.security.core.annotation.AuthenticationPrincipal UserPrincipal currentUser) {
+        return ResponseEntity.ok(appointmentService.listForPatient(currentUser.getUser()));
+    }
+
+    @GetMapping("/doctor/{doctorId}/schedule")
+    public ResponseEntity<List<AppointmentSlotDto>> schedule(@PathVariable UUID doctorId, @RequestParam LocalDate date) {
+        return ResponseEntity.ok(appointmentService.scheduleForDoctor(doctorId, date));
     }
 }
