@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from '@mui/material';
 import GoogleIcon from '@mui/icons-material/Google';
-import { useGoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin, useGoogleOAuth } from '@react-oauth/google';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -16,6 +16,7 @@ interface ConfiguredGoogleSignInButtonProps extends GoogleSignInButtonProps {}
 const ConfiguredGoogleSignInButton = ({ onError, label }: ConfiguredGoogleSignInButtonProps) => {
   const auth = useAuth();
   const navigate = useNavigate();
+  const { scriptLoadedSuccessfully } = useGoogleOAuth();
 
   const handleSuccess = async (accessToken: string | undefined) => {
     if (!accessToken) {
@@ -41,8 +42,16 @@ const ConfiguredGoogleSignInButton = ({ onError, label }: ConfiguredGoogleSignIn
     onNonOAuthError: () => onError('Google sign-in could not be opened. Please try again.'),
   });
 
+  const handleClick = () => {
+    if (!scriptLoadedSuccessfully) {
+      onError('Google sign-in is still loading. Please wait a moment and try again.');
+      return;
+    }
+    startGoogleLogin();
+  };
+
   return (
-    <Button fullWidth variant="outlined" size="large" startIcon={<GoogleIcon />} onClick={() => startGoogleLogin()} sx={{ py: 1.15 }}>
+    <Button fullWidth variant="outlined" size="large" startIcon={<GoogleIcon />} onClick={handleClick} sx={{ py: 1.15 }}>
       {label}
     </Button>
   );
