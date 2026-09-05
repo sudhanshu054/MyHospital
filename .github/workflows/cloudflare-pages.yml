@@ -37,6 +37,7 @@ jobs:
           test -n "$CLOUDFLARE_ACCOUNT_ID" || (echo "::error::Set CLOUDFLARE_ACCOUNT_ID repository secret." && exit 1)
           test -n "$CLOUDFLARE_PAGES_PROJECT" || (echo "::error::Set CLOUDFLARE_PAGES_PROJECT repository variable (for example hospital-management)." && exit 1)
           test -n "$API_ORIGIN" || (echo "::error::Set RENDER_API_ORIGIN repository variable to the Render backend URL." && exit 1)
+          test -n "$VITE_GOOGLE_OAUTH_CLIENT_ID" || (echo "::error::Set GOOGLE_OAUTH_CLIENT_ID repository variable to the Google Web client ID ending in .apps.googleusercontent.com." && exit 1)
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
