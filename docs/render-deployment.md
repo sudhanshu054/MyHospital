@@ -44,7 +44,7 @@ configuration to that service instead of creating a second backend.
 6. Put that origin (without `/api`) in the GitHub repository variable
    `RENDER_API_ORIGIN`, then run the Pages deployment. The Pages Function will
    proxy `/api/*` to Render, so the browser never needs the database or API
-   credentials.
+   credentials. `TUNNEL_API_ORIGIN` is no longer used by the Pages workflow.
 
 ## Migration behavior
 
