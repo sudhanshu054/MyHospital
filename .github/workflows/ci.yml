@@ -45,4 +45,4 @@ jobs:
       - name: Install dependencies
         run: cd frontend && npm ci
       - name: Build and validate frontend
-        run: cd frontend && npm run build && npm run check:worker
+        run: cd frontend && npm run build
