@@ -22,6 +22,8 @@ export interface AuthResponse {
   tokenType: string;
   email?: string;
   role?: string;
+  firstName?: string;
+  lastName?: string;
   message: string;
 }
 

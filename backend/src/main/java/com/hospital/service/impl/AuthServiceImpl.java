@@ -86,6 +86,8 @@ public class AuthServiceImpl implements AuthService {
                 .tokenType("Bearer")
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .message("Registration successful")
                 .build();
     }
@@ -219,6 +221,8 @@ public class AuthServiceImpl implements AuthService {
                 .tokenType("Bearer")
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .message(message)
                 .build();
     }

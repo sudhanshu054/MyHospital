@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -20,50 +20,17 @@ interface GoogleSignInButtonProps {
  *  - No state parameter handling is needed on our side because the library
  *    and Google's infrastructure handle it internally.
  *
- * The previous implicit access_token flow triggered Google's "not using state
- * parameter" security warning — this flow resolves that warning.
+ * GoogleOAuthProvider is supplied once at the app root (App.tsx). This
+ * component must NOT add a second provider – nesting two providers causes
+ * the Google Identity Services library to reinitialise and breaks sign-in.
  */
-const ConfiguredGoogleSignInButton = ({ onError, label }: GoogleSignInButtonProps) => {
+const GoogleSignInButton = ({ onError, label }: GoogleSignInButtonProps) => {
+  const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string | undefined;
   const auth = useAuth();
   const navigate = useNavigate();
 
-  const handleSuccess = async (credentialResponse: { credential?: string }) => {
-    const { credential } = credentialResponse;
-    if (!credential) {
-      onError('Google did not return a sign-in credential. Please try again.');
-      return;
-    }
-    try {
-      const response = await loginWithGoogle({ credential });
-      auth?.signIn(response.data);
-      navigate('/');
-    } catch (error) {
-      const apiMessage = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
-      onError(
-        typeof apiMessage === 'string'
-          ? apiMessage
-          : 'Google sign-in could not be completed. Please try again.'
-      );
-    }
-  };
-
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={() => onError('Google sign-in was cancelled or unavailable.')}
-        text={label.toLowerCase().includes('up') ? 'signup_with' : 'signin_with'}
-        shape="rectangular"
-        width="400"
-        useOneTap={false}
-      />
-    </Box>
-  );
-};
-
-const GoogleSignInButton = ({ onError, label }: GoogleSignInButtonProps) => {
-  const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string | undefined;
-
+  // If the client ID is absent the app root skips the provider entirely, so
+  // the GoogleLogin component cannot render. Show a disabled placeholder instead.
   if (!clientId) {
     return (
       <Box>
@@ -97,13 +64,37 @@ const GoogleSignInButton = ({ onError, label }: GoogleSignInButtonProps) => {
     );
   }
 
-  // Wrap in its own GoogleOAuthProvider so the component is self-contained
-  // even if the parent tree doesn't provide one (e.g. when VITE_GOOGLE_OAUTH_CLIENT_ID
-  // was absent at build time and the outer provider was skipped).
+  const handleSuccess = async (credentialResponse: { credential?: string }) => {
+    const { credential } = credentialResponse;
+    if (!credential) {
+      onError('Google did not return a sign-in credential. Please try again.');
+      return;
+    }
+    try {
+      const response = await loginWithGoogle({ credential });
+      auth?.signIn(response.data);
+      navigate('/');
+    } catch (error) {
+      const apiMessage = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      onError(
+        typeof apiMessage === 'string'
+          ? apiMessage
+          : 'Google sign-in could not be completed. Please try again.'
+      );
+    }
+  };
+
   return (
-    <GoogleOAuthProvider clientId={clientId}>
-      <ConfiguredGoogleSignInButton onError={onError} label={label} />
-    </GoogleOAuthProvider>
+    <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+      <GoogleLogin
+        onSuccess={handleSuccess}
+        onError={() => onError('Google sign-in was cancelled or unavailable.')}
+        text={label.toLowerCase().includes('up') ? 'signup_with' : 'signin_with'}
+        shape="rectangular"
+        width="400"
+        useOneTap={false}
+      />
+    </Box>
   );
 };
 
