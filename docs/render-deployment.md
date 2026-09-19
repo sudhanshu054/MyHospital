@@ -1,57 +1,110 @@
-# Updating the existing `hospital-backend` Render service
+# Render deployment guide
 
-This repository includes [`render.yaml`](../render.yaml), which describes the
-current Spring Boot backend as a Render Docker web service. It deliberately
-uses the existing service name, `hospital-backend`, so Render can apply its
-configuration to that service instead of creating a second backend.
+Everything runs on Render — frontend, backend, PostgreSQL, and Redis.
+No Cloudflare, no tunnel, no local machine required.
 
-## One-time Render dashboard steps
+## One-time setup
 
-1. Open the existing `hospital-backend` service in Render and confirm it is a
-   **Web Service**. Do not delete the old service or its environment variables.
-2. Connect it to `sudhanshu054/MyHospital`, branch `master`.
-3. In **Settings**, set the Dockerfile path to `backend/Dockerfile` and the
-   Docker build context to `backend`. Set health check path to `/api/openapi`.
-   Alternatively, create or sync a Blueprint from `render.yaml`; Render will
-   match the existing service by its `hospital-backend` name.
-4. In **Environment**, keep/add the following values. Add secret values only in
-   Render, never in GitHub variables or this repository:
+### 1. Create a PostgreSQL database
 
-| Variable | Value / source |
+**Render dashboard → New → PostgreSQL**
+
+- Name: `hospital-db`
+- Region: Singapore
+- Plan: Free (or Starter for always-on)
+
+Once created, note these values from the database detail page:
+
+| Field | Where to find it |
 | --- | --- |
-| `PORT` | `10000` |
-| `SPRING_JPA_HIBERNATE_DDL_AUTO` | `update` |
-| `DATABASE_TYPE` | `postgresql` |
-| `DATABASE_HOST` | Supabase pooler host |
-| `DATABASE_PORT` | `5432` |
-| `DATABASE_NAME` | `postgres` |
-| `DATABASE_USER` | Supabase pooler user |
-| `DATABASE_PASSWORD` | Supabase database password |
-| `DATABASE_URL_PARAMETERS` | `?sslmode=require` |
-| `REDIS_HOST` | Upstash endpoint hostname, without `https://` |
-| `REDIS_PORT` | `6379` |
-| `REDIS_USERNAME` | `default` |
-| `REDIS_PASSWORD` | Upstash password |
-| `REDIS_SSL_ENABLED` | `true` |
-| `JWT_SECRET` | existing production JWT secret, at least 32 bytes |
-| `GOOGLE_OAUTH_CLIENT_ID` | existing Google web client ID |
-| `OPENAI_API_KEY` | optional; leave blank if AI consultation is not configured |
-| `OPENAI_API_MODEL` | `gpt-4o-mini` |
-| `CORS_ALLOWED_ORIGINS` | `https://hospital-management-2be.pages.dev` |
+| Host (Internal) | Connections tab → Internal Database URL |
+| Database | Connections tab |
+| Username | Connections tab |
+| Password | Connections tab |
 
-5. Deploy the latest `master` commit. A successful deployment responds with
-   HTTP 200 at `https://<your-render-service>.onrender.com/api/openapi`.
-6. Put that origin (without `/api`) in the GitHub repository variable
-   `RENDER_API_ORIGIN`, then run the Pages deployment. The Pages Function will
-   proxy `/api/*` to Render, so the browser never needs the database or API
-   credentials. `TUNNEL_API_ORIGIN` is no longer used by the Pages workflow.
+### 2. Create a Redis instance
 
-## Migration behavior
+**Render dashboard → New → Redis**
 
-The backend currently uses JPA schema update mode. On the first successful
-deployment it creates the newly added portal tables and columns in the
-configured PostgreSQL database. Take a Supabase backup first if the older
-Render service points to a database containing data you need to keep.
+- Name: `hospital-redis`
+- Region: Singapore
+- Plan: Free
 
-No sample doctors, beds, tests, blood units, records, or results are seeded by
-this deployment. Those must be configured by authorized hospital staff.
+Note the **Internal URL** (`redis://:PASSWORD@red-xxx.singapore-redis.render.com:6379`).
+Extract the host (`red-xxx.singapore-redis.render.com`) and password.
+
+### 3. Deploy via Blueprint
+
+**Render dashboard → New → Blueprint**
+
+- Connect repo: `sudhanshu054/MyHospital`, branch `master`
+- Render finds `render.yaml` and creates two services:
+  - `hospital-frontend` — React static site
+  - `hospital-backend` — Spring Boot Docker web service
+
+### 4. Fill in secret environment variables
+
+After the Blueprint creates the services, go to each service's **Environment** tab
+and add the `sync: false` values:
+
+**hospital-backend:**
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_HOST` | Internal host from step 1 |
+| `DATABASE_USER` | Username from step 1 |
+| `DATABASE_PASSWORD` | Password from step 1 |
+| `REDIS_HOST` | Internal host from step 2 |
+| `REDIS_PASSWORD` | Password from step 2 |
+| `JWT_SECRET` | Random string ≥ 32 bytes — keep stable between deploys |
+| `GOOGLE_OAUTH_CLIENT_ID` | Google Web client ID (see `docs/google-oauth-setup.md`) |
+| `OPENAI_API_KEY` | Optional — leave blank to use the built-in fallback |
+
+**hospital-frontend:**
+
+| Variable | Value |
+| --- | --- |
+| `VITE_GOOGLE_OAUTH_CLIENT_ID` | Same Google Web client ID as above |
+
+> `VITE_API_BASE_URL` is already set to `https://hospital-backend.onrender.com/api`
+> in `render.yaml` and does not need to be added manually.
+
+### 5. Trigger first deploy
+
+Click **Deploy** on both services (or they auto-deploy on the first push after
+the Blueprint is created). The backend build takes ~5 minutes on first run.
+
+Verify the backend is live:
+```
+https://hospital-backend.onrender.com/api/openapi   → HTTP 200
+```
+
+Verify the frontend is live:
+```
+https://hospital-frontend.onrender.com              → Login page
+```
+
+## Redeployment
+
+Every push to `master` auto-deploys both services via the Blueprint. No manual
+steps are needed.
+
+## Custom domain
+
+To attach a custom domain (e.g. `app.myhospital.com`):
+
+1. **Render → hospital-frontend → Settings → Custom Domains → Add**
+2. Add the domain and follow the DNS instructions Render provides.
+3. Update `CORS_ALLOWED_ORIGINS` on `hospital-backend` to include the new domain:
+   ```
+   https://hospital-frontend.onrender.com,https://app.myhospital.com
+   ```
+4. Add the new origin to the **Authorized JavaScript origins** in Google Cloud
+   Console (see `docs/google-oauth-setup.md`).
+
+## Free tier notes
+
+- Free services spin down after 15 minutes of inactivity and take ~30 seconds
+  to wake on the next request. Upgrade to Starter ($7/mo) for always-on.
+- Free PostgreSQL databases expire after 90 days — upgrade to avoid data loss.
+- Free Redis instances also expire after 30 days — upgrade for persistence.

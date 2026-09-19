@@ -1,9 +1,44 @@
 # yaml-language-server: $schema=https://render.com/schema/render.yaml.json
 #
-# This Blueprint is intentionally named to update the existing Render service.
-# Values marked `sync: false` stay out of source control and are entered in
-# Render's dashboard (or preserved when the service already has them).
+# Full-stack Render Blueprint: static frontend + Docker backend.
+# Deploy via Render dashboard -> New -> Blueprint -> connect this repo.
+#
+# Values marked `sync: false` are secrets/environment-specific and must be
+# entered in the Render dashboard. They are never stored in this file.
+
 services:
+  # ── Frontend (React static site) ────────────────────────────────────────────
+  - type: web
+    name: hospital-frontend
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    routes:
+      # SPA fallback – all paths serve index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Full URL of the backend API, baked into the Vite bundle at build time.
+      # Update this if you rename the backend service.
+      - key: VITE_API_BASE_URL
+        value: https://hospital-backend.onrender.com/api
+      # Google OAuth client ID (public value, safe to store here).
+      - key: VITE_GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+
+  # ── Backend (Spring Boot via Docker) ────────────────────────────────────────
   - type: web
     name: hospital-backend
     runtime: docker
@@ -16,6 +51,7 @@ services:
         value: "10000"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
+      # ── Database (Render PostgreSQL) ──────────────────────────────────────
       - key: DATABASE_TYPE
         value: postgresql
       - key: DATABASE_HOST
@@ -30,23 +66,29 @@ services:
         sync: false
       - key: DATABASE_URL_PARAMETERS
         value: "?sslmode=require"
+      # ── Redis (Render Redis – internal, no TLS) ───────────────────────────
       - key: REDIS_HOST
         sync: false
       - key: REDIS_PORT
         value: "6379"
       - key: REDIS_USERNAME
-        value: default
+        value: ""
       - key: REDIS_PASSWORD
         sync: false
       - key: REDIS_SSL_ENABLED
-        value: "true"
+        value: "false"
+      # ── Auth & secrets ────────────────────────────────────────────────────
       - key: JWT_SECRET
         sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      # ── AI consultation (optional) ────────────────────────────────────────
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_API_MODEL
         value: gpt-4o-mini
-      - key: GOOGLE_OAUTH_CLIENT_ID
-        sync: false
+      # ── CORS: allow the Render static frontend origin ─────────────────────
+      # If you add a custom domain to hospital-frontend, add it here too,
+      # comma-separated: https://hospital-frontend.onrender.com,https://yourdomain.com
       - key: CORS_ALLOWED_ORIGINS
-        value: https://hospital-management-2be.pages.dev
+        value: https://hospital-frontend.onrender.com

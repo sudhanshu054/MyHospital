@@ -1,2 +1,0 @@
-# Used by `npm run dev:pages`; never commit a real .dev.vars file.
-API_ORIGIN=http://localhost:8080
