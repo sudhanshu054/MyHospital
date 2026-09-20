@@ -1,6 +1,9 @@
 # yaml-language-server: $schema=https://render.com/schema/render.yaml.json
 #
 # Full-stack Render Blueprint: static frontend + Docker backend.
+# Database: Supabase PostgreSQL (session pooler)
+# Cache:    Upstash Redis (TLS)
+#
 # Deploy via Render dashboard -> New -> Blueprint -> connect this repo.
 #
 # Values marked `sync: false` are secrets/environment-specific and must be
@@ -51,32 +54,32 @@ services:
         value: "10000"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
-      # ── Database (Render PostgreSQL) ──────────────────────────────────────
+      # ── Database (Supabase PostgreSQL – session pooler) ───────────────────
       - key: DATABASE_TYPE
         value: postgresql
       - key: DATABASE_HOST
-        sync: false
+        sync: false          # Supabase session-pooler host, e.g. aws-0-ap-south-1.pooler.supabase.com
       - key: DATABASE_PORT
         value: "5432"
       - key: DATABASE_NAME
         value: postgres
       - key: DATABASE_USER
-        sync: false
+        sync: false          # Supabase session-pooler user, e.g. postgres.xxxxxxxxxxxxxxxxxxxx
       - key: DATABASE_PASSWORD
-        sync: false
+        sync: false          # Supabase database password
       - key: DATABASE_URL_PARAMETERS
         value: "?sslmode=require"
-      # ── Redis (Render Redis – internal, no TLS) ───────────────────────────
+      # ── Redis (Upstash – TLS required) ────────────────────────────────────
       - key: REDIS_HOST
-        sync: false
+        sync: false          # Upstash endpoint, e.g. caring-xxx.upstash.io
       - key: REDIS_PORT
         value: "6379"
       - key: REDIS_USERNAME
-        value: ""
+        value: "default"
       - key: REDIS_PASSWORD
-        sync: false
+        sync: false          # Upstash Redis password
       - key: REDIS_SSL_ENABLED
-        value: "false"
+        value: "true"
       # ── Auth & secrets ────────────────────────────────────────────────────
       - key: JWT_SECRET
         sync: false

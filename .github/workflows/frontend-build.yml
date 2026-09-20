@@ -29,8 +29,10 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          # Use a placeholder so the build succeeds in CI without a real client ID.
-          # The real value is set in Render's environment variables for production.
+          # Point at the Render backend so the build validates real API paths.
+          # The real value is also set in render.yaml for production builds on Render.
           VITE_API_BASE_URL: https://hospital-backend.onrender.com/api
+          # Use a placeholder so the build succeeds in CI without a real client ID.
+          # The real value is set as a Render environment variable for production.
           VITE_GOOGLE_OAUTH_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID }}
         run: npm run build
