@@ -36,7 +36,7 @@ services:
       # Full URL of the backend API, baked into the Vite bundle at build time.
       # Update this if you rename the backend service.
       - key: VITE_API_BASE_URL
-        value: https://hospital-backend.onrender.com/api
+        value: https://hospital-backend-zwzs.onrender.com/api
       # Google OAuth client ID – public value, safe to store in this file.
       # It is baked into the Vite bundle at build time.
       - key: VITE_GOOGLE_OAUTH_CLIENT_ID
