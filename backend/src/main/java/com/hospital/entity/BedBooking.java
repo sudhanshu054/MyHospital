@@ -2,7 +2,6 @@ package com.hospital.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.GenericGenerator;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -15,7 +14,7 @@ import java.util.UUID;
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class BedBooking {
-    @Id @GeneratedValue(generator = "UUID") @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "patient_id", nullable = false) private Patient patient;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "bed_id", nullable = false) private Bed bed;

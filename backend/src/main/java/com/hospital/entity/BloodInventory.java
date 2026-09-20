@@ -2,7 +2,6 @@ package com.hospital.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.GenericGenerator;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -11,7 +10,7 @@ import java.util.UUID;
 @Table(name = "blood_inventory")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class BloodInventory {
-    @Id @GeneratedValue(generator = "UUID") @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     @Column(nullable = false, unique = true, length = 3) private String bloodGroup;
     @Column(nullable = false) private int availableUnits;
