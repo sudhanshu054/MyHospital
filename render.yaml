@@ -58,6 +58,8 @@ services:
       # ── Database (Supabase PostgreSQL – session pooler) ───────────────────
       - key: DATABASE_TYPE
         value: postgresql
+      - key: HIBERNATE_DIALECT
+        value: org.hibernate.dialect.PostgreSQLDialect
       - key: DATABASE_HOST
         sync: false          # Supabase session-pooler host, e.g. aws-0-ap-south-1.pooler.supabase.com
       - key: DATABASE_PORT
