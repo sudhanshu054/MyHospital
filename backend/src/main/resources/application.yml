@@ -2,6 +2,9 @@ server:
   port: ${PORT:8080}
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
   datasource:
     # Defaults keep local Docker Compose on MySQL. Set DATABASE_TYPE=postgresql
     # and the DATABASE_* variables when using Render Postgres.
@@ -15,9 +18,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
   data:
     redis:
       host: ${REDIS_HOST:redis}
