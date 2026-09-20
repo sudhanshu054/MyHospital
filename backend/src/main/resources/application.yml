@@ -15,10 +15,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        # Explicit dialect prevents Hibernate from guessing wrong on first boot
-        dialect: ${HIBERNATE_DIALECT:org.hibernate.dialect.MySQLDialect}
   autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
+    exclude:
+      - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
   data:
     redis:
       host: ${REDIS_HOST:redis}
